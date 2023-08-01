@@ -4,6 +4,11 @@ import argparse
 from pydub import AudioSegment
 from config import OPENAI_API_KEY
 
+import tiktoken
+
+encoding = tiktoken.get_encoding("cl100k_base")
+# encoding = tiktoken.encoding_for_model("gpt4")
+
 openai.api_key = OPENAI_API_KEY
 
 # Create the parser
@@ -128,18 +133,23 @@ def save_as_docx(minutes, filename):
         doc.add_paragraph()
     doc.save(filename)
 
-def chunk_transcription(transcription, max_tokens=8192):
+def count_tokens(text):
+    num_tokens = len(encoding.encode(text))
+    return num_tokens
+
+def chunk_transcription(transcription, max_tokens=8100):
     words = transcription.split(' ')
     chunks = []
     current_chunk = ''
     for word in words:
-        if len((current_chunk + ' ' + word).split(' ')) > max_tokens:
+        if count_tokens(current_chunk + ' ' + word) > max_tokens:
             chunks.append(current_chunk)
             current_chunk = word
         else:
             current_chunk += ' ' + word
     chunks.append(current_chunk)
     return chunks
+
 
 # Now you can use args.audio_file_path to get the audio file path
 transcription = transcribe_audio(args.audio_file_path)
